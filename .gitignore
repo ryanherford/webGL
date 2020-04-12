@@ -1,0 +1,4 @@
+node_modules
+src/old
+dist/main.bundle.js
+dist/main.bundle.js.gz

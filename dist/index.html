@@ -1,0 +1,32 @@
+<!doctype html>
+<html>
+	<head>
+		<title>Tiny WebGL</title>
+		<style>
+			canvas { 
+				display: block;
+				margin: auto;
+				background: white;
+				height: 800px;
+				width: 800px;
+			}
+			body {
+				background: black;
+				height: 100%;
+				width: 100%;
+			}
+		</style>
+	</head>
+	<body>
+		<canvas id='canvas' height="500" width= "500"></canvas>
+		<div id="uiContainer">
+			<div id="ui">
+				<div id="cameraAngle"></div>
+			</div>
+		</div>
+		<script src="https://webgl2fundamentals.org/webgl/resources/webgl-utils.js"></script>
+		<script src="https://webgl2fundamentals.org/webgl/resources/webgl-lessons-ui.js"></script>
+		<!-- So it's loaded -->
+		<script src="main.bundle.js"></script>
+	</body>
+</html>
