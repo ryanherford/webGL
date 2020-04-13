@@ -1,13 +1,16 @@
 import { vertexShaderSource, fragmentShaderSource, createShader, createProgram, radToDeg, degToRad, createRect} from './webGLUtils.js';
+import Camera from './camera.js';
+import KeyboardHandler from './keyboardHandler.js';
 import m4 from './matrixUtils.js';
 import Model from './model.js';
+import f from './f.json';
 
 let gl;
 let program;
 let matrixLocation;
-let fieldOfViewRadians;
-let cameraAngleRadians;
 const objects = [];
+let keyboardHandler;
+let camera;
 function main() {
     const canvas = document.getElementById('canvas');
     gl = canvas.getContext('webgl2');
@@ -15,7 +18,7 @@ function main() {
         console.log('No Web GL. Won\'t load!');
         return;
     }
-
+    
     const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
     const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
     program = createProgram(gl, [vertexShader, fragmentShader]);
@@ -24,23 +27,15 @@ function main() {
     attribNames.forEach(name => {
       attribs[`${name}`] = gl.getAttribLocation(program, `a_${name}`);
     });
-    objects.push(new Model(createRect(100,100, 100), f.texture, gl, attribs, 3, [-200, -50, -200]));
+    objects.push(new Model(createRect(100,100, 100), f.texture, gl, attribs, 3, [0, 0, -200]));
     objects.push(new Model(createRect(100,200, 100), f.texture, gl, attribs, 3, [100, -50, -200]));
     objects.push(new Model(createRect(200,100, 100), f.texture, gl, attribs, 3, [50, -50, -400]));
     objects.push(new Model(createRect(300, 50 , 100), f.texture, gl, attribs, 3, [-200, -200, -400]));
     matrixLocation = gl.getUniformLocation(program, 'u_matrix');
-
-    fieldOfViewRadians = degToRad(60);
-    cameraAngleRadians = degToRad(0);
-    webglLessonsUI.setupSlider("#cameraAngle", {value: radToDeg(cameraAngleRadians), slide: updateCameraAngle, min: -360, max: 360});
+    camera = new Camera(0, degToRad(60), 0, 0, 100);
+    keyboardHandler = new KeyboardHandler(camera);
 
     requestAnimationFrame(drawScene);
-}
-// Setup a ui.
-
-function updateCameraAngle(event, ui) {
-  cameraAngleRadians = degToRad(ui.value);
-  drawScene(gl);
 }
 
 function drawScene() {
@@ -57,19 +52,30 @@ function drawScene() {
     const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
     const zNear = 1;
     const zFar = 2000;
-    const projectionMatrix = m4.perspective(fieldOfViewRadians, aspect, zNear, zFar);
+    const projectionMatrix = m4.perspective(camera.fieldOfViewRad, aspect, zNear, zFar);
     // Make a view matrix from the camera matrix.
-
-    let cameraMatrix = m4.yRotation(cameraAngleRadians);
-    cameraMatrix = m4.translate(cameraMatrix, 0, 0, 200);
+    let cameraMatrix = m4.yRotation(camera.getCameraAngleRad());
+    cameraMatrix = m4.translate(cameraMatrix, camera.x, camera.y, camera.z);
+    // console.log(camera.x, camera.y, camera.z, camera.getCameraAngleRad())
+    // console.log(objects[0].pos[0], objects[0].pos[1], objects[0].pos[2]);
+    // Compute the position of the first F
+    // const fPosition = [objects[0].pos[0], objects[0].pos[1], objects[0].pos[2]];
+    // // Get the camera's postion from the matrix we computed
+    // const cameraPosition = [
+    //   cameraMatrix[12],
+    //   cameraMatrix[13],
+    //   cameraMatrix[14],
+    // ];
+    // const up = [0, 1, 0];
+    // cameraMatrix = m4.lookAt(cameraPosition, fPosition, up);
     const viewMatrix = m4.inverse(cameraMatrix);
-
     // create a viewProjection matrix. This will both apply perspective
     // AND move the world so that the camera is effectively the origin
     const viewProjectionMatrix = m4.multiply(projectionMatrix, viewMatrix);
     objects.forEach(obj => {
       render(matrixLocation, viewProjectionMatrix, obj);
     });
+    requestAnimationFrame(drawScene);
 }
 
 function render(matrixLocation, viewProjectionMatrix, obj) {
